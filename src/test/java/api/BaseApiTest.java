@@ -1,16 +1,20 @@
 package api;
 
+import api.models.User;
+import api.models.LoginRequest;
+import api.models.OrderRequest;
 import io.qameta.allure.Step;
 import io.qameta.allure.restassured.AllureRestAssured;
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.junit.After;
 import org.junit.BeforeClass;
 
+
 import java.util.List;
 
 import static io.restassured.RestAssured.given;
-
 public class BaseApiTest {
     protected static final String BASE_URL = "https://stellarburgers.nomoreparties.site/api";
     protected static final String ORDERS_ENDPOINT = "/orders";
@@ -43,10 +47,11 @@ public class BaseApiTest {
 
     @Step("Регистрация пользователя {email}")
     protected String registerUser(String email, String password, String name) {
+        User user = new User(email, password, name);
+
         Response response = given()
-                .header("Content-type", "application/json")
-                .body(String.format("{\"email\":\"%s\",\"password\":\"%s\",\"name\":\"%s\"}",
-                        email, password, name))
+                .contentType(ContentType.JSON)
+                .body(user)
                 .post(REGISTER_ENDPOINT);
 
         this.accessToken = response.path("accessToken");
@@ -56,9 +61,11 @@ public class BaseApiTest {
 
     @Step("Авторизация пользователя {email}")
     protected void loginUser(String email, String password) {
+        LoginRequest loginRequest = new LoginRequest(email, password);
+
         Response response = given()
-                .header("Content-type", "application/json")
-                .body(String.format("{\"email\":\"%s\",\"password\":\"%s\"}", email, password))
+                .contentType(ContentType.JSON)
+                .body(loginRequest)
                 .post(LOGIN_ENDPOINT);
 
         this.accessToken = response.path("accessToken");
@@ -68,19 +75,9 @@ public class BaseApiTest {
     @Step("Выход из системы")
     protected void logoutUser() {
         given()
-                .header("Content-type", "application/json")
-                .body(String.format("{\"token\":\"%s\"}", refreshToken))
+                .contentType(ContentType.JSON)
+                .body("{\"token\":\"" + refreshToken + "\"}")
                 .post(LOGOUT_ENDPOINT)
-                .then()
-                .statusCode(200);
-    }
-
-    @Step("Сброс пароля для email {email}")
-    protected void resetPassword(String email) {
-        given()
-                .header("Content-type", "application/json")
-                .body(String.format("{\"email\":\"%s\"}", email))
-                .post(PASSWORD_RESET_ENDPOINT)
                 .then()
                 .statusCode(200);
     }
@@ -94,10 +91,12 @@ public class BaseApiTest {
 
     @Step("Создание заказа с ингредиентами {ingredientIds}")
     protected Response createOrder(List<String> ingredientIds) {
+        OrderRequest orderRequest = new OrderRequest(ingredientIds);
+
         return given()
-                .header("Content-type", "application/json")
+                .contentType(ContentType.JSON)
                 .header("Authorization", accessToken != null ? accessToken : "")
-                .body(String.format("{\"ingredients\":[\"%s\"]}", String.join("\",\"", ingredientIds)))
+                .body(orderRequest)
                 .post(ORDERS_ENDPOINT);
     }
 

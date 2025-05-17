@@ -1,6 +1,8 @@
 package api;
 
+import api.models.User;
 import io.qameta.allure.*;
+import io.restassured.http.ContentType;
 import org.junit.Test;
 
 import static io.restassured.RestAssured.given;
@@ -17,11 +19,12 @@ public class UserTest extends BaseApiTest {
     public void testUpdateUserEmail() {
         accessToken = registerUser("user" + System.currentTimeMillis() + "@mail.com", "password", "Name");
         String newEmail = "updated" + System.currentTimeMillis() + "@mail.com";
+        User updatedUser = new User(newEmail, null, null);
 
         given()
                 .header("Authorization", accessToken)
-                .header("Content-type", "application/json")
-                .body(String.format("{\"email\":\"%s\"}", newEmail))
+                .contentType(ContentType.JSON)
+                .body(updatedUser)
                 .when()
                 .patch(USER_ENDPOINT)
                 .then()
@@ -36,11 +39,12 @@ public class UserTest extends BaseApiTest {
     @Severity(SeverityLevel.NORMAL)
     public void testUpdateUserName() {
         accessToken = registerUser("user" + System.currentTimeMillis() + "@mail.com", "password", "OldName");
+        User updatedUser = new User(null, null, "NewName");
 
         given()
                 .header("Authorization", accessToken)
-                .header("Content-type", "application/json")
-                .body("{\"name\":\"NewName\"}")
+                .contentType(ContentType.JSON)
+                .body(updatedUser)
                 .when()
                 .patch(USER_ENDPOINT)
                 .then()
@@ -53,9 +57,11 @@ public class UserTest extends BaseApiTest {
     @Description("Попытка изменения данных без авторизации")
     @Severity(SeverityLevel.BLOCKER)
     public void testUpdateUnauthorized() {
+        User updatedUser = new User(null, null, "Hacker");
+
         given()
-                .header("Content-type", "application/json")
-                .body("{\"name\":\"Hacker\"}")
+                .contentType(ContentType.JSON)
+                .body(updatedUser)
                 .when()
                 .patch(USER_ENDPOINT)
                 .then()

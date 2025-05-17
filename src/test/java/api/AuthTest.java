@@ -1,6 +1,9 @@
 package api;
 
+import api.models.User;
+import api.models.LoginRequest;
 import io.qameta.allure.*;
+import io.restassured.http.ContentType;
 import org.junit.Test;
 
 import static io.restassured.RestAssured.given;
@@ -15,9 +18,15 @@ public class AuthTest extends BaseApiTest {
     @Description("Успешная регистрация пользователя")
     @Severity(SeverityLevel.BLOCKER)
     public void testSuccessfulRegistration() {
+        User user = new User(
+                "test" + System.currentTimeMillis() + "@mail.com",
+                "password",
+                "User"
+        );
+
         given()
-                .header("Content-type", "application/json")
-                .body("{\"email\":\"test" + System.currentTimeMillis() + "@mail.com\",\"password\":\"password\",\"name\":\"User\"}")
+                .contentType(ContentType.JSON)
+                .body(user)
                 .when()
                 .post(REGISTER_ENDPOINT)
                 .then()
@@ -32,11 +41,13 @@ public class AuthTest extends BaseApiTest {
     @Severity(SeverityLevel.CRITICAL)
     public void testRegisterExistingUser() {
         String email = "existing" + System.currentTimeMillis() + "@mail.com";
+        User user = new User(email, "password", "User");
+
         registerUser(email, "password", "User");
 
         given()
-                .header("Content-type", "application/json")
-                .body(String.format("{\"email\":\"%s\",\"password\":\"password\",\"name\":\"User\"}", email))
+                .contentType(ContentType.JSON)
+                .body(user)
                 .when()
                 .post(REGISTER_ENDPOINT)
                 .then()
@@ -50,9 +61,11 @@ public class AuthTest extends BaseApiTest {
     @Description("Регистрация без обязательного поля")
     @Severity(SeverityLevel.CRITICAL)
     public void testRegisterWithoutRequiredField() {
+        User user = new User(null, "password", "User");
+
         given()
-                .header("Content-type", "application/json")
-                .body("{\"password\":\"password\",\"name\":\"User\"}")
+                .contentType(ContentType.JSON)
+                .body(user)
                 .when()
                 .post(REGISTER_ENDPOINT)
                 .then()
@@ -69,9 +82,11 @@ public class AuthTest extends BaseApiTest {
         String email = "test" + System.currentTimeMillis() + "@mail.com";
         registerUser(email, "password", "User");
 
+        LoginRequest loginRequest = new LoginRequest(email, "password");
+
         given()
-                .header("Content-type", "application/json")
-                .body(String.format("{\"email\":\"%s\",\"password\":\"password\"}", email))
+                .contentType(ContentType.JSON)
+                .body(loginRequest)
                 .when()
                 .post(LOGIN_ENDPOINT)
                 .then()
@@ -84,9 +99,11 @@ public class AuthTest extends BaseApiTest {
     @Description("Авторизация с неверными данными")
     @Severity(SeverityLevel.NORMAL)
     public void testLoginWithInvalidCredentials() {
+        LoginRequest loginRequest = new LoginRequest("wrong@mail.com", "wrong");
+
         given()
-                .header("Content-type", "application/json")
-                .body("{\"email\":\"wrong@mail.com\",\"password\":\"wrong\"}")
+                .contentType(ContentType.JSON)
+                .body(loginRequest)
                 .when()
                 .post(LOGIN_ENDPOINT)
                 .then()

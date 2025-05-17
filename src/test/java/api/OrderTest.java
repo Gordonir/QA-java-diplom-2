@@ -1,7 +1,12 @@
 package api;
 
+import api.models.OrderRequest;
 import io.qameta.allure.*;
+import io.restassured.http.ContentType;
 import org.junit.Test;
+
+import java.util.Collections;
+import java.util.List;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
@@ -16,11 +21,13 @@ public class OrderTest extends BaseApiTest {
     @Severity(SeverityLevel.CRITICAL)
     public void testCreateOrderWithAuth() {
         accessToken = registerUser("user" + System.currentTimeMillis() + "@mail.com", "password", "Name");
+        List<String> ingredients = Collections.singletonList(ingredientIds.get(0));
+        OrderRequest orderRequest = new OrderRequest(ingredients);
 
         given()
                 .header("Authorization", accessToken)
-                .header("Content-type", "application/json")
-                .body(String.format("{\"ingredients\":[\"%s\"]}", ingredientIds.get(0)))
+                .contentType(ContentType.JSON)
+                .body(orderRequest)
                 .when()
                 .post(ORDERS_ENDPOINT)
                 .then()
@@ -34,9 +41,12 @@ public class OrderTest extends BaseApiTest {
     @Description("Создание заказа без авторизации")
     @Severity(SeverityLevel.NORMAL)
     public void testCreateOrderWithoutAuth() {
+        List<String> ingredients = Collections.singletonList(ingredientIds.get(0));
+        OrderRequest orderRequest = new OrderRequest(ingredients);
+
         given()
-                .header("Content-type", "application/json")
-                .body(String.format("{\"ingredients\":[\"%s\"]}", ingredientIds.get(0)))
+                .contentType(ContentType.JSON)
+                .body(orderRequest)
                 .when()
                 .post(ORDERS_ENDPOINT)
                 .then()
@@ -50,9 +60,11 @@ public class OrderTest extends BaseApiTest {
     @Description("Создание заказа без ингредиентов")
     @Severity(SeverityLevel.MINOR)
     public void testCreateOrderWithoutIngredients() {
+        OrderRequest orderRequest = new OrderRequest(Collections.emptyList());
+
         given()
-                .header("Content-type", "application/json")
-                .body("{\"ingredients\":[]}")
+                .contentType(ContentType.JSON)
+                .body(orderRequest)
                 .when()
                 .post(ORDERS_ENDPOINT)
                 .then()
@@ -65,9 +77,12 @@ public class OrderTest extends BaseApiTest {
     @Description("Создание заказа с неверным хешем ингредиента")
     @Severity(SeverityLevel.NORMAL)
     public void testCreateOrderWithInvalidIngredient() {
+        List<String> ingredients = Collections.singletonList("invalid_id_123");
+        OrderRequest orderRequest = new OrderRequest(ingredients);
+
         given()
-                .header("Content-type", "application/json")
-                .body("{\"ingredients\":[\"invalid_id_123\"]}")
+                .contentType(ContentType.JSON)
+                .body(orderRequest)
                 .when()
                 .post(ORDERS_ENDPOINT)
                 .then()
